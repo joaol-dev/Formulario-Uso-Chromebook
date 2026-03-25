@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uso do Chromebook — Professor</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-badge"><span class="dot"></span> E. M. Paulo Luiz Barroso Oliveira</div>
+      <h1>Registro de uso<br><span>Chromebook</span></h1>
+      <p class="subtitle" id="datetime"></p>
+    </header>
+
+    <!-- Step 1: Professor -->
+    <div class="card">
+      <div class="card-label"><span class="step">1</span> Professor</div>
+      <select id="sel-professor">
+        <option value="">Selecione o professor…</option>
+        <option>Milena</option>
+        <option>Daniel</option>
+        <option>Ricardo</option>
+        <option>Cristiane</option>
+        <option>Luciana</option>
+        <option>Maria</option>
+        <option>Sirley</option>
+        <option>João</option>
+        <option>Vinicius</option>
+        <option>Renato</option>
+        <option>Gabriel</option>
+        <option>Layon</option>
+        <option>Emmerson</option>
+        <option>Vítor</option>
+        <option>Eliane</option>
+        <option>Fabio</option>
+        <option>Flávia</option>
+        <option>Enelicio</option>
+        <option>Neilton</option>
+        <option>Carlos</option>
+        <option>Sheila</option>
+        <option>Larissa</option>
+        <option>Marcela</option>
+        <option>Claudio</option>
+        <option>Fabiana</option>
+        <option>Ivan</option>
+        <option>Eliane</option>
+      </select>
+    </div>
+
+    <!-- Step 2: Turma -->
+    <div class="card">
+      <div class="card-label"><span class="step">2</span> Turma</div>
+      <select id="sel-turma">
+        <option value="">Selecione a turma…</option>
+        <option>Turma 600</option>
+        <option>Turma 601</option>
+        <option>Turma 700</option>
+        <option>Turma 701</option>
+        <option>Turma 800</option>
+        <option>Turma 801</option>
+        <option>Turma 900</option>
+        <option>Turma 901</option>
+      </select>
+    </div>
+
+    <!-- Step 3: Motivo -->
+    <div class="card">
+      <div class="card-label"><span class="step">3</span> Motivo do Uso</div>
+      <div class="motivo-grid">
+        <div class="motivo-option">
+          <input type="radio" name="motivo" id="m-estudo" value="Estudo" />
+          <label for="m-estudo"><span class="icon">📚</span> Estudo</label>
+        </div>
+        <div class="motivo-option">
+          <input type="radio" name="motivo" id="m-recreativo" value="Recreativo" />
+          <label for="m-recreativo"><span class="icon">🎮</span> Recreativo</label>
+        </div>
+        <div class="motivo-option">
+          <input type="radio" name="motivo" id="m-outros" value="Outros" />
+          <label for="m-outros"><span class="icon">✏️</span> Outros</label>
+        </div>
+      </div>
+      <div id="outros-texto">
+        <textarea id="txt-outros" placeholder="Descreva o motivo…"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-confirm" id="btn-confirmar" disabled>
+      ✓ Confirmar Uso
+    </button>
+
+    <footer>
+      Técnico de TI? <a href="ti.html">Acesse o painel →</a>
+    </footer>
+  </div>
+
+  <!-- Success overlay -->
+  <div id="success-overlay">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Uso registrado!</div>
+    <div class="success-detail" id="success-detail"></div>
+    <button class="btn-novo" id="btn-novo-registro">Novo registro</button>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+
+</html>
