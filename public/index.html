@@ -17,74 +17,45 @@
       <p class="subtitle" id="datetime"></p>
     </header>
 
-    <!-- Step 1: Professor -->
     <div class="card">
       <div class="card-label"><span class="step">1</span> Professor</div>
+
       <select id="sel-professor">
         <option value="">Selecione o professor…</option>
-        <option>Milena</option>
-        <option>Daniel</option>
-        <option>Ricardo</option>
-        <option>Cristiane</option>
-        <option>Luciana</option>
-        <option>Maria</option>
-        <option>Sirley</option>
-        <option>João</option>
-        <option>Vinicius</option>
-        <option>Renato</option>
-        <option>Gabriel</option>
-        <option>Layon</option>
-        <option>Emmerson</option>
-        <option>Vítor</option>
-        <option>Eliane</option>
-        <option>Fabio</option>
-        <option>Flávia</option>
-        <option>Enelicio</option>
-        <option>Neilton</option>
-        <option>Carlos</option>
-        <option>Sheila</option>
-        <option>Larissa</option>
-        <option>Marcela</option>
-        <option>Claudio</option>
-        <option>Fabiana</option>
-        <option>Ivan</option>
-        <option>Eliane</option>
       </select>
+
+      <div id="campo-auxiliar" style="display:none; margin-top:0.75rem;">
+        <input type="text" id="txt-auxiliar" placeholder="Digite o nome do Aux. de disciplina ou do TI" />
+      </div>
     </div>
 
-    <!-- Step 2: Turma -->
     <div class="card">
       <div class="card-label"><span class="step">2</span> Turma</div>
       <select id="sel-turma">
         <option value="">Selecione a turma…</option>
-        <option>Turma 600</option>
-        <option>Turma 601</option>
-        <option>Turma 700</option>
-        <option>Turma 701</option>
-        <option>Turma 800</option>
-        <option>Turma 801</option>
-        <option>Turma 900</option>
-        <option>Turma 901</option>
       </select>
     </div>
 
-    <!-- Step 3: Motivo -->
     <div class="card">
       <div class="card-label"><span class="step">3</span> Motivo do Uso</div>
+
       <div class="motivo-grid">
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-estudo" value="Estudo" />
           <label for="m-estudo"><span class="icon">📚</span> Estudo</label>
         </div>
+
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-recreativo" value="Recreativo" />
           <label for="m-recreativo"><span class="icon">🎮</span> Recreativo</label>
         </div>
+
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-outros" value="Outros" />
           <label for="m-outros"><span class="icon">✏️</span> Outros</label>
         </div>
       </div>
+
       <div id="outros-texto">
         <textarea id="txt-outros" placeholder="Descreva o motivo…"></textarea>
       </div>
@@ -99,7 +70,6 @@
     </footer>
   </div>
 
-  <!-- Success overlay -->
   <div id="success-overlay">
     <div class="success-icon">✅</div>
     <div class="success-title">Uso registrado!</div>
