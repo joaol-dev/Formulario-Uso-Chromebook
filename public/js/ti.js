@@ -3,65 +3,99 @@ let currentPage = 1;
 
 async function getHistorico() {
   const res = await fetch('/historico');
-  if (!res.ok) throw new Error('Erro ao buscar histórico');
+
+  if (!res.ok) {
+    throw new Error(`Erro ao buscar histórico: ${res.status}`);
+  }
+
   return await res.json();
 }
 
-function badgeMotivo(m) {
-  const lower = m.toLowerCase();
+function badgeMotivo(motivo) {
+  if (!motivo || typeof motivo !== 'string') {
+    return '<span class="badge-motivo outros">Não informado</span>';
+  }
+
+  const lower = motivo.toLowerCase();
   let cls = 'outros';
 
   if (lower.startsWith('estudo')) cls = 'estudo';
   else if (lower.startsWith('recreativo')) cls = 'recreativo';
 
-  return `<span class="badge-motivo ${cls}">${m}</span>`;
+  return `<span class="badge-motivo ${cls}">${motivo}</span>`;
 }
 
 async function populateDateFilter() {
-  const h = await getHistorico();
-  const dates = [...new Set(h.map(r => r.data))];
+  const historico = await getHistorico();
+  const dates = [...new Set(historico.map(r => r.data).filter(Boolean))];
 
   const sel = document.getElementById('f-data');
-  const cur = sel.value;
+  if (!sel) return;
 
+  const cur = sel.value;
   sel.innerHTML = '<option value="">Todas as datas</option>';
 
   dates.forEach(d => {
-    const o = document.createElement('option');
-    o.value = d;
-    o.textContent = d;
-    if (d === cur) o.selected = true;
-    sel.appendChild(o);
+    const option = document.createElement('option');
+    option.value = d;
+    option.textContent = d;
+    if (d === cur) option.selected = true;
+    sel.appendChild(option);
   });
 }
 
 async function getFiltered() {
-  let h = await getHistorico();
+  let historico = await getHistorico();
 
-  const fProf = document.getElementById('f-professor').value.trim().toLowerCase();
-  const fTurma = document.getElementById('f-turma').value;
-  const fMotivo = document.getElementById('f-motivo').value;
-  const fData = document.getElementById('f-data').value;
+  const fProf = document.getElementById('f-professor')?.value.trim().toLowerCase() || '';
+  const fTurma = document.getElementById('f-turma')?.value || '';
+  const fMotivo = document.getElementById('f-motivo')?.value || '';
+  const fData = document.getElementById('f-data')?.value || '';
 
-  if (fProf) h = h.filter(r => r.professor.toLowerCase().includes(fProf));
-  if (fTurma) h = h.filter(r => r.turma === fTurma);
-  if (fMotivo) h = h.filter(r => r.motivo.startsWith(fMotivo));
-  if (fData) h = h.filter(r => r.data === fData);
+  if (fProf) {
+    historico = historico.filter(r =>
+      (r.professor || '').toLowerCase().includes(fProf)
+    );
+  }
 
-  return h;
+  if (fTurma) {
+    historico = historico.filter(r => r.turma === fTurma);
+  }
+
+  if (fMotivo) {
+    historico = historico.filter(r => (r.motivo || '').startsWith(fMotivo));
+  }
+
+  if (fData) {
+    historico = historico.filter(r => r.data === fData);
+  }
+
+  return historico;
 }
 
 async function renderStats() {
-  const h = await getHistorico();
+  const historico = await getHistorico();
   const today = new Date().toLocaleDateString('pt-BR');
 
-  const hoje = h.filter(r => r.data === today).length;
-  const turmas = new Set(h.map(r => r.turma)).size;
+  const hoje = historico.filter(r => r.data === today).length;
+  const turmas = new Set(historico.map(r => r.turma).filter(Boolean)).size;
 
-  document.getElementById('stats').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value blue">${h.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Hoje</div><div class="stat-value green">${hoje}</div></div>
-    <div class="stat-card"><div class="stat-label">Turmas</div><div class="stat-value orange">${turmas}</div></div>
+  const stats = document.getElementById('stats');
+  if (!stats) return;
+
+  stats.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total de Registros</div>
+      <div class="stat-value blue">${historico.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Hoje</div>
+      <div class="stat-value green">${hoje}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Turmas</div>
+      <div class="stat-value orange">${turmas}</div>
+    </div>
   `;
 }
 
@@ -72,10 +106,17 @@ async function render() {
 
   if (currentPage > totalPages) currentPage = 1;
 
-  const slice = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+  const start = (currentPage - 1) * PER_PAGE;
+  const end = currentPage * PER_PAGE;
+  const slice = filtered.slice(start, end);
 
   const tbody = document.getElementById('tbody');
   const emptyEl = document.getElementById('empty-state');
+  const pag = document.getElementById('pagination');
+
+  if (!tbody || !emptyEl || !pag) {
+    throw new Error('Elementos do painel não encontrados no HTML.');
+  }
 
   if (slice.length === 0) {
     tbody.innerHTML = '';
@@ -85,33 +126,61 @@ async function render() {
 
     tbody.innerHTML = slice.map((r, i) => `
       <tr>
-        <td>${(currentPage - 1) * PER_PAGE + i + 1}</td>
-        <td><strong>${r.professor}</strong></td>
-        <td><span class="badge-turma">${r.turma}</span></td>
+        <td>${start + i + 1}</td>
+        <td><strong>${r.professor || '-'}</strong></td>
+        <td><span class="badge-turma">${r.turma || '-'}</span></td>
         <td>${badgeMotivo(r.motivo)}</td>
-        <td>${r.data}</td>
-        <td>${r.hora}</td>
+        <td class="datetime-cell">${r.data || '-'}</td>
+        <td class="datetime-cell">${r.hora || '-'}</td>
         <td>
-          <button class="btn-del" onclick="deleteRow('${r.timestamp}')">✕</button>
+          <button class="btn-del" onclick="deleteRow('${encodeURIComponent(r.timestamp || '')}')" title="Remover">
+            ✕
+          </button>
         </td>
       </tr>
     `).join('');
   }
 
-  document.getElementById('pagination').innerHTML = `${total} registro(s)`;
+  if (totalPages <= 1) {
+    pag.innerHTML = `<span>${total} registro(s)</span>`;
+    return;
+  }
+
+  let btns = '';
+  for (let p = 1; p <= totalPages; p++) {
+    btns += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  }
+
+  pag.innerHTML = `
+    <span>${total} registro(s) · Página ${currentPage} de ${totalPages}</span>
+    <div class="page-btns">
+      <button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>
+      ${btns}
+      <button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>
+    </div>
+  `;
 }
 
-function goPage(p) {
-  currentPage = p;
-  render();
+function goPage(page) {
+  currentPage = page;
+  render().catch(err => {
+    console.error('Erro ao mudar página:', err);
+  });
 }
 
 async function deleteRow(ts) {
+  const timestamp = decodeURIComponent(ts);
+
   if (!confirm('Remover este registro?')) return;
 
-  await fetch(`/historico/${encodeURIComponent(ts)}`, {
+  const res = await fetch(`/historico/${encodeURIComponent(timestamp)}`, {
     method: 'DELETE'
   });
+
+  if (!res.ok) {
+    alert('Não foi possível remover o registro.');
+    return;
+  }
 
   await populateDateFilter();
   await renderStats();
@@ -119,41 +188,60 @@ async function deleteRow(ts) {
 }
 
 async function confirmClear() {
-  if (!confirm('Apagar tudo?')) return;
+  if (!confirm('Tem certeza que deseja apagar TODO o histórico?')) return;
 
-  await fetch('/historico', { method: 'DELETE' });
+  const res = await fetch('/historico', {
+    method: 'DELETE'
+  });
+
+  if (!res.ok) {
+    alert('Não foi possível limpar o histórico.');
+    return;
+  }
 
   currentPage = 1;
-
   await populateDateFilter();
   await renderStats();
   await render();
 }
 
 async function exportCSV() {
-  const h = await getFiltered();
+  const historico = await getFiltered();
 
-  if (!h.length) return alert('Sem dados');
+  if (!historico.length) {
+    alert('Nenhum registro para exportar.');
+    return;
+  }
 
-  const csv = h.map(r =>
-    `"${r.professor}","${r.turma}","${r.motivo}","${r.data}","${r.hora}"`
-  ).join('\n');
+  const header = ['Professor', 'Turma', 'Motivo', 'Data', 'Hora'];
+  const rows = historico.map(r => [
+    r.professor || '',
+    r.turma || '',
+    r.motivo || '',
+    r.data || '',
+    r.hora || ''
+  ]);
 
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv' });
+  const csv = [header, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
 
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'historico.csv';
+  a.download = `historico_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
   a.click();
 }
 
-(async function init() {
+async function init() {
   try {
     await populateDateFilter();
     await renderStats();
     await render();
-  } catch (err) {
-    console.error(err);
-    alert('Servidor não está rodando');
+  } catch (error) {
+    console.error('Erro ao inicializar painel TI:', error);
+    alert('Não foi possível carregar os registros agora. Atualize a página em alguns segundos.');
   }
-})();
+}
+
+init();

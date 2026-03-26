@@ -44,9 +44,10 @@
     <div class="filters">
       <div class="search-box">
         <i data-lucide="search" class="search-icon"></i>
-        <input type="text" placeholder="Buscar professor ou turma…" id="search">
+        <input type="text" id="f-professor" placeholder="Buscar professor..." oninput="render()">
       </div>
-      <select id="f-turma">
+
+      <select id="f-turma" onchange="render()">
         <option value="">Todas as turmas</option>
         <option>Turma 600</option>
         <option>Turma 601</option>
@@ -57,13 +58,15 @@
         <option>Turma 900</option>
         <option>Turma 901</option>
       </select>
-      <select id="f-motivo">
+
+      <select id="f-motivo" onchange="render()">
         <option value="">Todos os motivos</option>
         <option value="Estudo">Estudo</option>
         <option value="Recreativo">Recreativo</option>
         <option value="Outros">Outros</option>
       </select>
-      <select id="f-data">
+
+      <select id="f-data" onchange="render()">
         <option value="">Todas as datas</option>
       </select>
     </div>
@@ -83,7 +86,8 @@
         </thead>
         <tbody id="tbody"></tbody>
       </table>
-      <div class="empty" id="empty-state" hidden>
+
+      <div class="empty" id="empty-state" style="display:none">
         <div class="empty-icon">
           <i data-lucide="clipboard-list"></i>
         </div>
