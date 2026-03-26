@@ -4,8 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Uso do Chromebook — Professor</title>
+  <title>Registro - Chromebook</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
 </head>
 
 <body>
@@ -42,17 +44,26 @@
       <div class="motivo-grid">
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-estudo" value="Estudo" />
-          <label for="m-estudo"><span class="icon">📚</span> Estudo</label>
+          <label for="m-estudo">
+            <i data-lucide="book-open" class="icon"></i>
+            Estudo
+          </label>
         </div>
 
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-recreativo" value="Recreativo" />
-          <label for="m-recreativo"><span class="icon">🎮</span> Recreativo</label>
+          <label for="m-recreativo">
+            <i data-lucide="monitor-play" class="icon"></i>
+            Recreativo
+          </label>
         </div>
 
         <div class="motivo-option">
           <input type="radio" name="motivo" id="m-outros" value="Outros" />
-          <label for="m-outros"><span class="icon">✏️</span> Outros</label>
+          <label for="m-outros">
+            <i data-lucide="file-pen-line" class="icon"></i>
+            Outros
+          </label>
         </div>
       </div>
 
@@ -62,7 +73,8 @@
     </div>
 
     <button class="btn-confirm" id="btn-confirmar" disabled>
-      ✓ Confirmar Uso
+      <i data-lucide="check" class="btn-icon"></i>
+      <span>Confirmar uso</span>
     </button>
 
     <footer>
@@ -71,6 +83,9 @@
   </div>
 
   <div id="success-overlay">
+    <div class="success-icon">
+      <i data-lucide="circle-check-big"></i>
+    </div>
     <div class="success-icon">✅</div>
     <div class="success-title">Uso registrado!</div>
     <div class="success-detail" id="success-detail"></div>
@@ -78,6 +93,10 @@
   </div>
 
   <script src="js/script.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 
 </html>

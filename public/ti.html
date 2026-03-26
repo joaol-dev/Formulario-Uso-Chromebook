@@ -9,26 +9,43 @@
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="css/ti.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
 </head>
 
 <body>
   <div class="container">
     <header>
       <div class="header-left">
-        <div class="badge">🖥️ Painel do Técnico de TI</div>
+        <div class="badge">
+          <i data-lucide="shield-check"></i>
+          <span>Painel do Técnico de TI</span>
+        </div>
         <h1>Histórico de uso<br><span>Chromebook</span></h1>
       </div>
       <div class="header-right">
-        <a href="index.html" class="btn">← Tela de Registro</a>
-        <button class="btn primary" id="export-btn" type="button">⬇ Exportar CSV</button>
-        <button class="btn danger" id="clear-btn" type="button">🗑 Limpar Tudo</button>
+        <a href="index.html" class="btn">
+          <i data-lucide="arrow-left"></i>
+          <span>Tela de Registro</span>
+        </a>
+        <button class="btn primary" onclick="exportCSV()">
+          <i data-lucide="download"></i>
+          <span>Exportar CSV</span>
+        </button>
+        <button class="btn danger" onclick="confirmClear()">
+          <i data-lucide="x"></i>
+          <span>Limpar Tudo</span>
+        </button>
       </div>
     </header>
 
     <div class="stats" id="stats"></div>
 
     <div class="filters">
-      <input type="text" id="f-professor" placeholder="🔍 Filtrar por professor…" />
+      <div class="search-box">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" placeholder="Buscar professor ou turma…" id="search">
+      </div>
       <select id="f-turma">
         <option value="">Todas as turmas</option>
         <option>Turma 600</option>
@@ -67,7 +84,9 @@
         <tbody id="tbody"></tbody>
       </table>
       <div class="empty" id="empty-state" hidden>
-        <div class="empty-icon">📋</div>
+        <div class="empty-icon">
+          <i data-lucide="clipboard-list"></i>
+        </div>
         <p>Nenhum registro encontrado.</p>
       </div>
     </div>
@@ -76,6 +95,10 @@
   </div>
 
   <script src="js/ti.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 
 </html>
