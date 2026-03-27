@@ -1,4 +1,4 @@
-# Formulário de Uso de Chromebook
+# Formulário de Uso do Chromebook
 
 Sistema web para registro e acompanhamento do uso de Chromebooks na **Escola Municipalizada Paulo Luiz Barroso Oliveira**.
 
