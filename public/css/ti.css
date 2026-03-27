@@ -548,17 +548,31 @@ td {
     display: flex;
     justify-content: flex-end;
     margin-top: 0.35rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.6rem;
   }
 
+td:nth-child(7)::before {
+    display: none !important;
+}
+
   .btn-del {
-    font-size: 1.15rem;
-    padding: 0.5rem 0.7rem;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.9rem;
     border: 1px solid var(--border);
     background: var(--bg);
     color: var(--warn);
-    min-width: 44px;
-    min-height: 44px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
   }
+
+  .btn-del::after {
+    content: "Excluir";
+    font-size: 0.78rem;
+    font-weight: 500;
+}
 
   .btn-del:hover {
     background: rgba(247, 129, 102, 0.12);

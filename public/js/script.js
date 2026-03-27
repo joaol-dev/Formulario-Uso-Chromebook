@@ -353,7 +353,8 @@ async function registrarUso() {
     console.error(error);
     alert('Não foi possível registrar o uso. Verifique se o servidor está online.');
   } finally {
-    btn.textContent = '✓ Confirmar Uso';
+    btn.innerHTML = '<i data-lucide="check" class="btn-icon"></i><span>Confirmar uso</span>';
+    lucide.createIcons();
     validate();
   }
 }
