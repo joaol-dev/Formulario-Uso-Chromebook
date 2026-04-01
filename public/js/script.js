@@ -26,7 +26,7 @@ const gradePorDia = {
     { professor: 'Renato', turmas: ['Turma 700', 'Turma 701', 'Turma 801'] },
     { professor: 'Daniel', turmas: ['Turma 700', 'Turma 701'] },
     { professor: 'Layon', turmas: ['Turma 800', 'Turma 801', 'Turma 901'] },
-    { professor: 'Cristiane', turmas: ['Turma 800', 'Turma 801'] },
+    { professor: 'Cristiane', turmas: ['Turma 800', 'Turma 801', 'Turma 900', 'Turma 901'] },
     { professor: 'Bruna', turmas: ['Turma 900', 'Turma 901'] },
     { professor: 'Gabriel', turmas: ['Turma 900', 'Turma 901', 'Turma 710'] },
     { professor: 'Fabio', turmas: ['Turma 610', 'Turma 710', 'Turma 910'] },
