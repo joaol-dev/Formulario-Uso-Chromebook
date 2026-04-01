@@ -2,7 +2,7 @@ const PER_PAGE = 15;
 let currentPage = 1;
 
 async function getHistorico() {
-  const res = await fetch('/historico');
+  const res = await fetch('/historico', { cache: 'no-store' });
 
   if (!res.ok) {
     throw new Error(`Erro ao buscar histórico: ${res.status}`);
@@ -163,9 +163,7 @@ async function render() {
 
 function goPage(page) {
   currentPage = page;
-  render().catch(err => {
-    console.error('Erro ao mudar página:', err);
-  });
+  render().catch(err => console.error(err));
 }
 
 async function deleteRow(ts) {
