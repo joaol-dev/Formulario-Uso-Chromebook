@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 const { Pool } = require('pg');
 
 const app = express();
@@ -119,11 +122,30 @@ app.get('/', (req, res) => {
 
 initDb()
     .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Servidor rodando na porta ${PORT}`);
-        });
+        startServer(PORT);
     })
     .catch(err => {
         console.error('Erro ao inicializar banco:', err);
         process.exit(1);
     });
+
+function startServer(initialPort) {
+    const normalizedPort = Number(initialPort) || 3000;
+    const server = http.createServer(app);
+
+    server.on('error', error => {
+        if (error.code === 'EADDRINUSE') {
+            const nextPort = normalizedPort + 1;
+            console.warn(`Porta ${normalizedPort} em uso. Tentando porta ${nextPort}...`);
+            startServer(nextPort);
+            return;
+        }
+
+        console.error('Erro ao iniciar servidor:', error);
+        process.exit(1);
+    });
+
+    server.listen(normalizedPort, () => {
+        console.log(`Servidor rodando em http://localhost:${normalizedPort}`);
+    });
+}
