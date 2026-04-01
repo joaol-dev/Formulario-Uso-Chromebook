@@ -75,12 +75,12 @@ app.get('/historico', async (req, res) => {
         const result = await pool.query(`
       SELECT professor, turma, motivo, data, hora, timestamp
       FROM registros
-      ORDER BY id DESC
+      ORDER BY timestamp DESC
     `);
 
         res.json(result.rows);
     } catch (error) {
-        console.error(error);
+        console.error('Erro ao buscar histórico:', error);
         res.status(500).json({ error: 'Erro ao buscar histórico.' });
     }
 });
