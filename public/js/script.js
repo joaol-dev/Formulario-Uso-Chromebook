@@ -345,8 +345,23 @@ async function registrarUso() {
 
     const registro = await res.json();
 
-    document.getElementById('success-detail').innerHTML =
-      `<strong>${registro.professor}</strong> registrou uso para <strong>${registro.turma}</strong><br>Motivo: ${registro.motivo}<br><br>${registro.data} às ${registro.hora}`;
+    const successDetail = document.getElementById('success-detail');
+    const professorStrong = document.createElement('strong');
+    const turmaStrong = document.createElement('strong');
+
+    professorStrong.textContent = registro.professor;
+    turmaStrong.textContent = registro.turma;
+
+    successDetail.replaceChildren(
+      professorStrong,
+      document.createTextNode(' registrou uso para '),
+      turmaStrong,
+      document.createElement('br'),
+      document.createTextNode(`Motivo: ${registro.motivo}`),
+      document.createElement('br'),
+      document.createElement('br'),
+      document.createTextNode(`${registro.data} às ${registro.hora}`)
+    );
 
     document.getElementById('success-overlay').classList.add('show');
   } catch (error) {

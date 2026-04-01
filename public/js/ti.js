@@ -11,9 +11,14 @@ async function getHistorico() {
   return await res.json();
 }
 
-function badgeMotivo(motivo) {
+function createBadgeMotivo(motivo) {
+  const badge = document.createElement('span');
+  badge.className = 'badge-motivo';
+
   if (!motivo || typeof motivo !== 'string') {
-    return '<span class="badge-motivo outros">Não informado</span>';
+    badge.classList.add('outros');
+    badge.textContent = 'Não informado';
+    return badge;
   }
 
   const lower = motivo.toLowerCase();
@@ -22,7 +27,70 @@ function badgeMotivo(motivo) {
   if (lower.startsWith('estudo')) cls = 'estudo';
   else if (lower.startsWith('recreativo')) cls = 'recreativo';
 
-  return `<span class="badge-motivo ${cls}">${motivo}</span>`;
+  badge.classList.add(cls);
+  badge.textContent = motivo;
+  return badge;
+}
+
+function createStatCard(label, value, valueClass) {
+  const card = document.createElement('div');
+  card.className = 'stat-card';
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'stat-label';
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement('div');
+  valueEl.className = `stat-value ${valueClass}`;
+  valueEl.textContent = String(value);
+
+  card.append(labelEl, valueEl);
+  return card;
+}
+
+function createCell(text, className = '') {
+  const td = document.createElement('td');
+  if (className) td.className = className;
+  td.textContent = text;
+  return td;
+}
+
+function createRegistroRow(registro, index) {
+  const tr = document.createElement('tr');
+
+  tr.appendChild(createCell(String(index)));
+
+  const professorTd = document.createElement('td');
+  const professorStrong = document.createElement('strong');
+  professorStrong.textContent = registro.professor || '-';
+  professorTd.appendChild(professorStrong);
+  tr.appendChild(professorTd);
+
+  const turmaTd = document.createElement('td');
+  const turmaBadge = document.createElement('span');
+  turmaBadge.className = 'badge-turma';
+  turmaBadge.textContent = registro.turma || '-';
+  turmaTd.appendChild(turmaBadge);
+  tr.appendChild(turmaTd);
+
+  const motivoTd = document.createElement('td');
+  motivoTd.appendChild(createBadgeMotivo(registro.motivo));
+  tr.appendChild(motivoTd);
+
+  tr.appendChild(createCell(registro.data || '-', 'datetime-cell'));
+  tr.appendChild(createCell(registro.hora || '-', 'datetime-cell'));
+
+  const actionTd = document.createElement('td');
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'btn-del';
+  deleteButton.type = 'button';
+  deleteButton.title = 'Remover';
+  deleteButton.textContent = '×';
+  deleteButton.addEventListener('click', () => deleteRow(registro.timestamp || ''));
+  actionTd.appendChild(deleteButton);
+  tr.appendChild(actionTd);
+
+  return tr;
 }
 
 async function populateDateFilter() {
@@ -83,20 +151,11 @@ async function renderStats() {
   const stats = document.getElementById('stats');
   if (!stats) return;
 
-  stats.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Total de Registros</div>
-      <div class="stat-value blue">${historico.length}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Hoje</div>
-      <div class="stat-value green">${hoje}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Turmas</div>
-      <div class="stat-value orange">${turmas}</div>
-    </div>
-  `;
+  stats.replaceChildren(
+    createStatCard('Total de Registros', historico.length, 'blue'),
+    createStatCard('Hoje', hoje, 'green'),
+    createStatCard('Turmas', turmas, 'orange')
+  );
 }
 
 async function render() {
@@ -119,26 +178,11 @@ async function render() {
   }
 
   if (slice.length === 0) {
-    tbody.innerHTML = '';
+    tbody.replaceChildren();
     emptyEl.style.display = 'block';
   } else {
     emptyEl.style.display = 'none';
-
-    tbody.innerHTML = slice.map((r, i) => `
-      <tr>
-        <td>${start + i + 1}</td>
-        <td><strong>${r.professor || '-'}</strong></td>
-        <td><span class="badge-turma">${r.turma || '-'}</span></td>
-        <td>${badgeMotivo(r.motivo)}</td>
-        <td class="datetime-cell">${r.data || '-'}</td>
-        <td class="datetime-cell">${r.hora || '-'}</td>
-        <td>
-          <button class="btn-del" onclick="deleteRow('${encodeURIComponent(r.timestamp || '')}')" title="Remover">
-            ✕
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.replaceChildren(...slice.map((r, i) => createRegistroRow(r, start + i + 1)));
   }
 
   if (totalPages <= 1) {
