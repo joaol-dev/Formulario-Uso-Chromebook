@@ -4,6 +4,11 @@ let currentPage = 1;
 async function getHistorico() {
   const res = await fetch('/historico', { cache: 'no-store' });
 
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    throw new Error('Sessão expirada.');
+  }
+
   if (!res.ok) {
     throw new Error(`Erro ao buscar histórico: ${res.status}`);
   }
@@ -219,6 +224,11 @@ async function deleteRow(ts) {
     method: 'DELETE'
   });
 
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return;
+  }
+
   if (!res.ok) {
     alert('Não foi possível remover o registro.');
     return;
@@ -235,6 +245,11 @@ async function confirmClear() {
   const res = await fetch('/historico', {
     method: 'DELETE'
   });
+
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return;
+  }
 
   if (!res.ok) {
     alert('Não foi possível limpar o histórico.');
@@ -273,6 +288,18 @@ async function exportCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = `historico_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
   a.click();
+}
+
+async function logout() {
+  try {
+    await fetch('/logout', {
+      method: 'POST'
+    });
+  } catch (error) {
+    console.error('Erro ao sair do painel:', error);
+  } finally {
+    window.location.href = '/login.html';
+  }
 }
 
 async function init() {

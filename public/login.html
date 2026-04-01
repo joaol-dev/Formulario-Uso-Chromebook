@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login do Painel TI</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
+</head>
+
+<body>
+  <div class="container login-container">
+    <header>
+      <div class="logo-badge"><span class="dot"></span> Acesso restrito</div>
+      <h1>Painel do<br><span>Técnico de TI</span></h1>
+      <p class="subtitle">Digite a senha administrativa para abrir o histórico, exportar dados e gerenciar os registros.</p>
+    </header>
+
+    <div class="card login-card">
+      <div class="card-label"><span class="step">1</span> Acesso administrativo</div>
+      <p class="login-helper">Use a senha do painel para continuar com segurança.</p>
+
+      <div class="password-field">
+        <input type="password" id="txt-password" placeholder="Digite a senha do painel" autocomplete="current-password" />
+        <button type="button" class="password-toggle" id="btn-toggle-password">Mostrar</button>
+      </div>
+    </div>
+
+    <button class="btn-confirm" id="btn-login">
+      <span>Entrar no painel</span>
+    </button>
+
+    <p class="login-feedback" id="login-feedback" aria-live="polite"></p>
+
+    <footer>
+      Voltar para o formulário? <a href="index.html">Abrir tela de registro</a>
+    </footer>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+
+</html>
