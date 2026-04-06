@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs/promises');
 const { Pool } = require('pg');
 
 const app = express();
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const SESSION_COOKIE_NAME = 'ti_session';
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
+const FALLBACK_DB_PATH = path.join(__dirname, 'data', 'registros.json');
 const sessions = new Map();
 
 const pool = new Pool({
@@ -172,7 +174,197 @@ function getDateTimeParts() {
     };
 }
 
+async function ensureFallbackDb() {
+    await fs.mkdir(path.dirname(FALLBACK_DB_PATH), { recursive: true });
+
+    try {
+        await fs.access(FALLBACK_DB_PATH);
+    } catch {
+        await fs.writeFile(FALLBACK_DB_PATH, '[]', 'utf8');
+    }
+}
+
+async function readFallbackRegistros() {
+    await ensureFallbackDb();
+
+    const content = await fs.readFile(FALLBACK_DB_PATH, 'utf8');
+
+    try {
+        const registros = JSON.parse(content);
+        return Array.isArray(registros) ? registros : [];
+    } catch {
+        return [];
+    }
+}
+
+async function writeFallbackRegistros(registros) {
+    await ensureFallbackDb();
+    await fs.writeFile(FALLBACK_DB_PATH, JSON.stringify(registros, null, 2), 'utf8');
+}
+
+function sortRegistrosByTimestampDesc(registros) {
+    return [...registros].sort((a, b) => {
+        const aTime = Date.parse(a.timestamp) || 0;
+        const bTime = Date.parse(b.timestamp) || 0;
+        return bTime - aTime;
+    });
+}
+
+function normalizeRegistro(row) {
+    return {
+        professor: row.professor,
+        turma: row.turma,
+        motivo: row.motivo,
+        data: row.data,
+        hora: row.hora,
+        timestamp: row.timestamp
+    };
+}
+
+function isDatabaseConfigured() {
+    return !!process.env.DATABASE_URL;
+}
+
+function isDatabaseUnavailable(error) {
+    return Boolean(
+        error &&
+        typeof error === 'object' &&
+        ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', '57P01'].includes(error.code)
+    );
+}
+
+async function insertRegistro(registro) {
+    if (!isDatabaseConfigured()) {
+        const registros = await readFallbackRegistros();
+        registros.push(registro);
+        await writeFallbackRegistros(registros);
+        return { registro, storage: 'arquivo' };
+    }
+
+    try {
+        const query = `
+      INSERT INTO registros (professor, turma, motivo, data, hora, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING professor, turma, motivo, data, hora, timestamp
+    `;
+
+        const values = [
+            registro.professor,
+            registro.turma,
+            registro.motivo,
+            registro.data,
+            registro.hora,
+            registro.timestamp
+        ];
+
+        const result = await pool.query(query, values);
+        return { registro: normalizeRegistro(result.rows[0]), storage: 'postgres' };
+    } catch (error) {
+        if (error.code === '23505') {
+            throw new Error('Já existe um registro com este identificador.');
+        }
+
+        if (!isDatabaseUnavailable(error)) {
+            throw error;
+        }
+
+        console.warn('PostgreSQL indisponível. Salvando registro no arquivo local.', error.message);
+
+        const registros = await readFallbackRegistros();
+        registros.push(registro);
+        await writeFallbackRegistros(registros);
+        return { registro, storage: 'arquivo' };
+    }
+}
+
+async function listRegistros() {
+    const fallbackRegistros = await readFallbackRegistros();
+
+    if (!isDatabaseConfigured()) {
+        return sortRegistrosByTimestampDesc(fallbackRegistros);
+    }
+
+    try {
+        const result = await pool.query(`
+      SELECT professor, turma, motivo, data, hora, timestamp
+      FROM registros
+      ORDER BY timestamp DESC
+    `);
+
+        const registros = result.rows.map(normalizeRegistro);
+        const merged = new Map();
+
+        [...fallbackRegistros, ...registros].forEach(registro => {
+            merged.set(registro.timestamp, registro);
+        });
+
+        return sortRegistrosByTimestampDesc([...merged.values()]);
+    } catch (error) {
+        if (!isDatabaseUnavailable(error)) {
+            throw error;
+        }
+
+        console.warn('PostgreSQL indisponível. Lendo histórico do arquivo local.', error.message);
+        return sortRegistrosByTimestampDesc(fallbackRegistros);
+    }
+}
+
+async function deleteRegistro(timestamp) {
+    const fallbackRegistros = await readFallbackRegistros();
+    const nextFallbackRegistros = fallbackRegistros.filter(registro => registro.timestamp !== timestamp);
+    const removedFromFallback = nextFallbackRegistros.length !== fallbackRegistros.length;
+
+    if (removedFromFallback) {
+        await writeFallbackRegistros(nextFallbackRegistros);
+    }
+
+    if (!isDatabaseConfigured()) {
+        return removedFromFallback;
+    }
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM registros WHERE timestamp = $1',
+            [timestamp]
+        );
+
+        return removedFromFallback || result.rowCount > 0;
+    } catch (error) {
+        if (!isDatabaseUnavailable(error)) {
+            throw error;
+        }
+
+        console.warn('PostgreSQL indisponível. Remoção feita apenas no arquivo local.', error.message);
+        return removedFromFallback;
+    }
+}
+
+async function clearRegistros() {
+    await writeFallbackRegistros([]);
+
+    if (!isDatabaseConfigured()) {
+        return;
+    }
+
+    try {
+        await pool.query('DELETE FROM registros');
+    } catch (error) {
+        if (!isDatabaseUnavailable(error)) {
+            throw error;
+        }
+
+        console.warn('PostgreSQL indisponível. Histórico limpo apenas no arquivo local.', error.message);
+    }
+}
+
 async function initDb() {
+    await ensureFallbackDb();
+
+    if (!isDatabaseConfigured()) {
+        console.warn('DATABASE_URL não definida. Usando armazenamento em arquivo local.');
+        return;
+    }
+
     await pool.query(`
     CREATE TABLE IF NOT EXISTS registros (
       id SERIAL PRIMARY KEY,
@@ -188,7 +380,7 @@ async function initDb() {
 
 app.post('/registrar', async (req, res) => {
     try {
-        const { professor, turma, motivo } = req.body;
+        const { professor, turma, motivo } = req.body || {};
 
         if (!professor || !turma || !motivo) {
             return res.status(400).json({
@@ -197,32 +389,26 @@ app.post('/registrar', async (req, res) => {
         }
 
         const { data, hora, timestamp } = getDateTimeParts();
+        const { registro, storage } = await insertRegistro({
+            professor,
+            turma,
+            motivo,
+            data,
+            hora,
+            timestamp
+        });
 
-        const query = `
-      INSERT INTO registros (professor, turma, motivo, data, hora, timestamp)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING professor, turma, motivo, data, hora, timestamp
-    `;
-
-        const values = [professor, turma, motivo, data, hora, timestamp];
-        const result = await pool.query(query, values);
-
-        res.status(201).json(result.rows[0]);
+        res.status(201).json({ ...registro, storage });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao salvar registro.' });
+        res.status(500).json({ error: error.message || 'Erro ao salvar registro.' });
     }
 });
 
 app.get('/historico', requireAuth, async (req, res) => {
     try {
-        const result = await pool.query(`
-      SELECT professor, turma, motivo, data, hora, timestamp
-      FROM registros
-      ORDER BY timestamp DESC
-    `);
-
-        res.json(result.rows);
+        const registros = await listRegistros();
+        res.json(registros);
     } catch (error) {
         console.error('Erro ao buscar histórico:', error);
         res.status(500).json({ error: 'Erro ao buscar histórico.' });
@@ -231,12 +417,9 @@ app.get('/historico', requireAuth, async (req, res) => {
 
 app.delete('/historico/:timestamp', requireAuth, async (req, res) => {
     try {
-        const result = await pool.query(
-            'DELETE FROM registros WHERE timestamp = $1',
-            [req.params.timestamp]
-        );
+        const removed = await deleteRegistro(req.params.timestamp);
 
-        if (result.rowCount === 0) {
+        if (!removed) {
             return res.status(404).json({ error: 'Registro não encontrado.' });
         }
 
@@ -249,7 +432,7 @@ app.delete('/historico/:timestamp', requireAuth, async (req, res) => {
 
 app.delete('/historico', requireAuth, async (req, res) => {
     try {
-        await pool.query('DELETE FROM registros');
+        await clearRegistros();
         res.json({ ok: true });
     } catch (error) {
         console.error(error);
