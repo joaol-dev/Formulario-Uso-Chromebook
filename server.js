@@ -120,6 +120,14 @@ app.get('/login', (req, res) => {
     res.redirect('/login.html');
 });
 
+app.get('/login.html', (req, res) => {
+    if (isAuthenticated(req)) {
+        return res.redirect('/ti.html');
+    }
+
+    return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 app.post('/login', (req, res) => {
     const { password } = req.body || {};
 
