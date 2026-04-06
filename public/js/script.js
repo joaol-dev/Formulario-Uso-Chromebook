@@ -9,13 +9,13 @@ const OPCAO_AUXILIAR = 'AUX_TI';
 const gradePorDia = {
   1: [ // segunda
     { professor: 'Milena', turmas: ['Turma 600', 'Turma 601', 'Turma 610'] },
-    { professor: 'Daniel', turmas: ['Turma 601', 'Turma 700', 'Turma 800', 'Turma 710'] },
+    { professor: 'Daniel', turmas: ['Turma 601', 'Turma 700', 'Turma 701','Turma 800', 'Turma 710'] },
     { professor: 'Maria', turmas: ['Turma 700', 'Turma 701'] },
     { professor: 'Cristiane', turmas: ['Turma 701', 'Turma 800', 'Turma 810'] },
     { professor: 'João', turmas: ['Turma 800', 'Turma 801', 'Turma 611'] },
     { professor: 'Vitor', turmas: ['Turma 801', 'Turma 901', 'Turma 610'] },
     { professor: 'Gabriel', turmas: ['Turma 900', 'Turma 901'] },
-    { professor: 'Sirley', turmas: ['Turma 900', 'Turma 910'] },
+    { professor: 'Sirley', turmas: ['Turma 801', 'Turma 900', 'Turma 910'] },
     { professor: 'Hudson', turmas: ['Turma 611', 'Turma 810'] },
     { professor: 'Ricardo', turmas: ['Turma 910'] },
     { professor: 'Jardelina', turmas: ['Turma 710'] }
