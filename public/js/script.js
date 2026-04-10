@@ -185,10 +185,21 @@ function getNomeProfessorSelecionado() {
   const professorSelecionado = document.getElementById('sel-professor').value;
 
   if (professorSelecionado === OPCAO_AUXILIAR) {
-    return document.getElementById('txt-auxiliar').value.trim();
+    return sanitizeProfessorName(document.getElementById('txt-auxiliar').value);
   }
 
-  return professorSelecionado;
+  return sanitizeProfessorName(professorSelecionado);
+}
+
+function sanitizeProfessorName(value) {
+  const normalized = String(value ?? '').trim().replace(/\s+/g, ' ');
+
+  return normalized.replace(/^["']+|["']+$/g, '');
+}
+
+function getTipoResponsavelSelecionado() {
+  const professorSelecionado = document.getElementById('sel-professor').value;
+  return professorSelecionado === OPCAO_AUXILIAR ? 'Aux/TI' : 'Professor';
 }
 
 function carregarProfessoresDoMomento() {
@@ -309,6 +320,7 @@ function resetForm() {
 async function registrarUso() {
   const btn = document.getElementById('btn-confirmar');
   const professor = getNomeProfessorSelecionado();
+  const tipoResponsavel = getTipoResponsavelSelecionado();
   const turma = document.getElementById('sel-turma').value;
   const motivoEl = document.querySelector('input[name="motivo"]:checked');
 
@@ -334,6 +346,7 @@ async function registrarUso() {
       },
       body: JSON.stringify({
         professor,
+        tipoResponsavel,
         turma,
         motivo
       })
@@ -353,6 +366,7 @@ async function registrarUso() {
     turmaStrong.textContent = registro.turma;
 
     successDetail.replaceChildren(
+      document.createTextNode(`${registro.tipoResponsavel || tipoResponsavel}: `),
       professorStrong,
       document.createTextNode(' registrou uso para '),
       turmaStrong,

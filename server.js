@@ -214,12 +214,22 @@ function sortRegistrosByTimestampDesc(registros) {
 function normalizeRegistro(row) {
     return {
         professor: row.professor,
+        tipoResponsavel: row.tipo_responsavel || row.tipoResponsavel || 'Professor',
         turma: row.turma,
         motivo: row.motivo,
         data: row.data,
         hora: row.hora,
         timestamp: row.timestamp
     };
+}
+
+function sanitizeProfessorName(value) {
+    const normalized = String(value ?? '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/^["']+|["']+$/g, '');
+
+    return normalized;
 }
 
 async function buildWorkbookBuffer(registros) {
@@ -231,7 +241,7 @@ async function buildWorkbookBuffer(registros) {
     workbook.creator = 'Formulario Uso Chromebook';
     workbook.created = new Date();
 
-    worksheet.mergeCells('A1:E1');
+    worksheet.mergeCells('A1:F1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'Historico de Uso dos Chromebooks';
     titleCell.font = {
@@ -248,7 +258,7 @@ async function buildWorkbookBuffer(registros) {
     };
     worksheet.getRow(1).height = 24;
 
-    worksheet.mergeCells('A2:E2');
+    worksheet.mergeCells('A2:F2');
     const subtitleCell = worksheet.getCell('A2');
     subtitleCell.value = `Gerado em ${new Date().toLocaleString('pt-BR', {
         timeZone: 'America/Sao_Paulo'
@@ -263,6 +273,7 @@ async function buildWorkbookBuffer(registros) {
     worksheet.getRow(2).height = 18;
 
     worksheet.columns = [
+        { key: 'tipoResponsavel', width: 14 },
         { key: 'professor', width: 28 },
         { key: 'turma', width: 16 },
         { key: 'motivo', width: 20 },
@@ -271,7 +282,7 @@ async function buildWorkbookBuffer(registros) {
     ];
 
     const headerRow = worksheet.getRow(3);
-    headerRow.values = ['Professor', 'Turma', 'Motivo', 'Data', 'Hora'];
+    headerRow.values = ['Tipo', 'Responsável', 'Turma', 'Motivo', 'Data', 'Hora'];
     headerRow.height = 20;
 
     headerRow.eachCell(cell => {
@@ -296,6 +307,7 @@ async function buildWorkbookBuffer(registros) {
 
     registros.forEach((registro, index) => {
         const row = worksheet.addRow({
+            tipoResponsavel: registro.tipoResponsavel || 'Professor',
             professor: registro.professor || '',
             turma: registro.turma || '',
             motivo: registro.motivo || '',
@@ -323,14 +335,15 @@ async function buildWorkbookBuffer(registros) {
             }
         });
 
-        row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-        row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
         row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
     });
 
     worksheet.autoFilter = {
         from: 'A3',
-        to: 'E3'
+        to: 'F3'
     };
 
     return workbook.xlsx.writeBuffer();
@@ -358,13 +371,14 @@ async function insertRegistro(registro) {
 
     try {
         const query = `
-      INSERT INTO registros (professor, turma, motivo, data, hora, timestamp)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING professor, turma, motivo, data, hora, timestamp
+      INSERT INTO registros (professor, tipo_responsavel, turma, motivo, data, hora, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING professor, tipo_responsavel, turma, motivo, data, hora, timestamp
     `;
 
         const values = [
             registro.professor,
+            registro.tipoResponsavel,
             registro.turma,
             registro.motivo,
             registro.data,
@@ -393,7 +407,7 @@ async function insertRegistro(registro) {
 }
 
 async function listRegistros() {
-    const fallbackRegistros = await readFallbackRegistros();
+    const fallbackRegistros = (await readFallbackRegistros()).map(normalizeRegistro);
 
     if (!isDatabaseConfigured()) {
         return sortRegistrosByTimestampDesc(fallbackRegistros);
@@ -401,7 +415,7 @@ async function listRegistros() {
 
     try {
         const result = await pool.query(`
-      SELECT professor, turma, motivo, data, hora, timestamp
+      SELECT professor, tipo_responsavel, turma, motivo, data, hora, timestamp
       FROM registros
       ORDER BY timestamp DESC
     `);
@@ -484,6 +498,7 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS registros (
       id SERIAL PRIMARY KEY,
       professor TEXT NOT NULL,
+      tipo_responsavel TEXT NOT NULL DEFAULT 'Professor',
       turma TEXT NOT NULL,
       motivo TEXT NOT NULL,
       data TEXT NOT NULL,
@@ -491,13 +506,20 @@ async function initDb() {
       timestamp TEXT NOT NULL UNIQUE
     )
   `);
+
+    await pool.query(`
+    ALTER TABLE registros
+    ADD COLUMN IF NOT EXISTS tipo_responsavel TEXT NOT NULL DEFAULT 'Professor'
+  `);
 }
 
 app.post('/registrar', async (req, res) => {
     try {
-        const { professor, turma, motivo } = req.body || {};
+        const { professor, turma, motivo, tipoResponsavel } = req.body || {};
+        const sanitizedProfessor = sanitizeProfessorName(professor);
+        const normalizedTipoResponsavel = tipoResponsavel === 'Aux/TI' ? 'Aux/TI' : 'Professor';
 
-        if (!professor || !turma || !motivo) {
+        if (!sanitizedProfessor || !turma || !motivo) {
             return res.status(400).json({
                 error: 'Campos obrigatórios: professor, turma e motivo.'
             });
@@ -505,7 +527,8 @@ app.post('/registrar', async (req, res) => {
 
         const { data, hora, timestamp } = getDateTimeParts();
         const { registro, storage } = await insertRegistro({
-            professor,
+            professor: sanitizedProfessor,
+            tipoResponsavel: normalizedTipoResponsavel,
             turma,
             motivo,
             data,

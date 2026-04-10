@@ -60,10 +60,21 @@ function createCell(text, className = '') {
   return td;
 }
 
+function createBadgeTipoResponsavel(tipoResponsavel) {
+  const badge = document.createElement('span');
+  badge.className = 'badge-turma';
+  badge.textContent = tipoResponsavel || 'Professor';
+  return badge;
+}
+
 function createRegistroRow(registro, index) {
   const tr = document.createElement('tr');
 
   tr.appendChild(createCell(String(index)));
+
+  const tipoTd = document.createElement('td');
+  tipoTd.appendChild(createBadgeTipoResponsavel(registro.tipoResponsavel));
+  tr.appendChild(tipoTd);
 
   const professorTd = document.createElement('td');
   const professorStrong = document.createElement('strong');
