@@ -279,8 +279,8 @@ async function exportCSV() {
     r.hora || ''
   ]);
 
-  const csv = [header, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  const csv = ['sep=;', ...[header, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))]
     .join('\n');
 
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
