@@ -7,6 +7,7 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const { Pool } = require('pg');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -221,6 +222,32 @@ function normalizeRegistro(row) {
     };
 }
 
+function buildWorkbookBuffer(registros) {
+    const sheetRows = registros.map(registro => ({
+        Professor: registro.professor || '',
+        Turma: registro.turma || '',
+        Motivo: registro.motivo || '',
+        Data: registro.data || '',
+        Hora: registro.hora || '',
+        Timestamp: registro.timestamp || ''
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(sheetRows);
+
+    worksheet['!cols'] = [
+        { wch: 28 },
+        { wch: 14 },
+        { wch: 18 },
+        { wch: 14 },
+        { wch: 10 },
+        { wch: 26 }
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Historico');
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+}
+
 function isDatabaseConfigured() {
     return !!process.env.DATABASE_URL;
 }
@@ -412,6 +439,35 @@ app.get('/historico', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Erro ao buscar histórico:', error);
         res.status(500).json({ error: 'Erro ao buscar histórico.' });
+    }
+});
+
+app.post('/historico/export.xlsx', requireAuth, async (req, res) => {
+    try {
+        const { registros } = req.body || {};
+
+        if (!Array.isArray(registros) || registros.length === 0) {
+            return res.status(400).json({ error: 'Nenhum registro para exportar.' });
+        }
+
+        const workbookBuffer = buildWorkbookBuffer(registros);
+        const dateLabel = new Date().toLocaleDateString('pt-BR', {
+            timeZone: 'America/Sao_Paulo'
+        }).replace(/\//g, '-');
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="historico_${dateLabel}.xlsx"`
+        );
+
+        return res.send(workbookBuffer);
+    } catch (error) {
+        console.error('Erro ao exportar planilha XLSX:', error);
+        return res.status(500).json({ error: 'NÃ£o foi possÃ­vel exportar a planilha.' });
     }
 });
 

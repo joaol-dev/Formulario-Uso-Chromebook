@@ -262,7 +262,7 @@ async function confirmClear() {
   await render();
 }
 
-async function exportCSV() {
+async function exportXLSX() {
   const historico = await getFiltered();
 
   if (!historico.length) {
@@ -270,24 +270,30 @@ async function exportCSV() {
     return;
   }
 
-  const header = ['Professor', 'Turma', 'Motivo', 'Data', 'Hora'];
-  const rows = historico.map(r => [
-    r.professor || '',
-    r.turma || '',
-    r.motivo || '',
-    r.data || '',
-    r.hora || ''
-  ]);
+  const res = await fetch('/historico/export.xlsx', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ registros: historico })
+  });
 
-  const csv = ['sep=;', ...[header, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))]
-    .join('\n');
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return;
+  }
 
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  if (!res.ok) {
+    alert('NÃ£o foi possÃ­vel exportar a planilha.');
+    return;
+  }
+
+  const blob = await res.blob();
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `historico_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+  a.download = `historico_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
   a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 async function logout() {
