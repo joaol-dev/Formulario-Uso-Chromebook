@@ -6,8 +6,8 @@ const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs/promises');
+const ExcelJS = require('exceljs');
 const { Pool } = require('pg');
-const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -222,30 +222,118 @@ function normalizeRegistro(row) {
     };
 }
 
-function buildWorkbookBuffer(registros) {
-    const sheetRows = registros.map(registro => ({
-        Professor: registro.professor || '',
-        Turma: registro.turma || '',
-        Motivo: registro.motivo || '',
-        Data: registro.data || '',
-        Hora: registro.hora || '',
-        Timestamp: registro.timestamp || ''
-    }));
+async function buildWorkbookBuffer(registros) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Historico', {
+        views: [{ state: 'frozen', ySplit: 3 }]
+    });
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(sheetRows);
+    workbook.creator = 'Formulario Uso Chromebook';
+    workbook.created = new Date();
 
-    worksheet['!cols'] = [
-        { wch: 28 },
-        { wch: 14 },
-        { wch: 18 },
-        { wch: 14 },
-        { wch: 10 },
-        { wch: 26 }
+    worksheet.mergeCells('A1:E1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'Historico de Uso dos Chromebooks';
+    titleCell.font = {
+        name: 'Calibri',
+        size: 16,
+        bold: true,
+        color: { argb: 'FFFFFFFF' }
+    };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1F4E78' }
+    };
+    worksheet.getRow(1).height = 24;
+
+    worksheet.mergeCells('A2:E2');
+    const subtitleCell = worksheet.getCell('A2');
+    subtitleCell.value = `Gerado em ${new Date().toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo'
+    })}`;
+    subtitleCell.font = {
+        name: 'Calibri',
+        size: 10,
+        italic: true,
+        color: { argb: 'FF4A5568' }
+    };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(2).height = 18;
+
+    worksheet.columns = [
+        { key: 'professor', width: 28 },
+        { key: 'turma', width: 16 },
+        { key: 'motivo', width: 20 },
+        { key: 'data', width: 14 },
+        { key: 'hora', width: 10 }
     ];
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Historico');
-    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const headerRow = worksheet.getRow(3);
+    headerRow.values = ['Professor', 'Turma', 'Motivo', 'Data', 'Hora'];
+    headerRow.height = 20;
+
+    headerRow.eachCell(cell => {
+        cell.font = {
+            name: 'Calibri',
+            bold: true,
+            color: { argb: 'FFFFFFFF' }
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF2B6CB0' }
+        };
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FFB7C0CE' } },
+            left: { style: 'thin', color: { argb: 'FFB7C0CE' } },
+            bottom: { style: 'thin', color: { argb: 'FFB7C0CE' } },
+            right: { style: 'thin', color: { argb: 'FFB7C0CE' } }
+        };
+    });
+
+    registros.forEach((registro, index) => {
+        const row = worksheet.addRow({
+            professor: registro.professor || '',
+            turma: registro.turma || '',
+            motivo: registro.motivo || '',
+            data: registro.data || '',
+            hora: registro.hora || ''
+        });
+
+        const isEvenRow = index % 2 === 0;
+
+        row.eachCell(cell => {
+            cell.alignment = { vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+
+            if (isEvenRow) {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFF7FAFC' }
+                };
+            }
+        });
+
+        row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    worksheet.autoFilter = {
+        from: 'A3',
+        to: 'E3'
+    };
+
+    return workbook.xlsx.writeBuffer();
 }
 
 function isDatabaseConfigured() {
@@ -450,7 +538,7 @@ app.post('/historico/export.xlsx', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Nenhum registro para exportar.' });
         }
 
-        const workbookBuffer = buildWorkbookBuffer(registros);
+        const workbookBuffer = await buildWorkbookBuffer(registros);
         const dateLabel = new Date().toLocaleDateString('pt-BR', {
             timeZone: 'America/Sao_Paulo'
         }).replace(/\//g, '-');
